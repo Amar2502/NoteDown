@@ -1,5 +1,6 @@
 import core
 import keyboard
+from get_audio import cleanup
 
 NEON_BLUE = "\033[94m"
 RESET_ALL = "\033[0m"
@@ -34,6 +35,7 @@ def handle_command(command: str):
         core.end_session()
 
     elif cmd == "exit":
+        cleanup()
         print("👋 Exiting...")
         exit()
 
@@ -47,14 +49,10 @@ def main():
     print("\nCommands:")
     print("  start <session_name>")
     print("  end")
-    print("  exit\n")
-
-    print("Hotkeys:")
     print("  Ctrl+T → Save clipboard text (Markdown preserved)")
     print("  Ctrl+I → Save latest screenshot")
     print("  Ctrl+A → Toggle audio recording (start/stop)")
-    print("  ESC → Exit\n")
-
+    print("  Ctrl+Y → Save typed text")
     register_hotkeys()
 
     keyboard.add_hotkey("esc", lambda: exit(), suppress=True)

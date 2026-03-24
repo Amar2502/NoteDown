@@ -25,9 +25,11 @@ def _record():
             print(f"❌ Recording error: {e}")
             break
 
+recording_thread = None
+
 
 def toggle_audio():
-    global is_recording, stream, frames
+    global is_recording, stream, frames, recording_thread
 
     Path(AUDIO_DIR).mkdir(parents=True, exist_ok=True)
 
@@ -42,8 +44,10 @@ def toggle_audio():
             frames_per_buffer=1024
         )
 
-        is_recording = True
-        threading.Thread(target=_record, daemon=True).start()
+        if not is_recording:
+            is_recording = True
+            recording_thread = threading.Thread(target=_record, daemon=True)
+            recording_thread.start()
 
         print("🎤 Recording started... (press again to stop)")
         return None
@@ -51,6 +55,7 @@ def toggle_audio():
     else:
         # STOP RECORDING
         is_recording = False
+        recording_thread.join()
 
         stream.stop_stream()
         stream.close()
@@ -69,3 +74,6 @@ def toggle_audio():
             "type": "audio",
             "path": filename
         }
+
+def cleanup():
+    audio.terminate()
