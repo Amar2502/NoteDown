@@ -1,9 +1,17 @@
 import pyaudio
 import wave
 from datetime import datetime
-from config import AUDIO_DIR
 from pathlib import Path
 import threading
+import sys
+
+# Allow running this file directly (`python controller\get_audio.py`).
+# Without this, `config.py` in the project root may not be on `sys.path`.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from config import ASSETS_DIR
 
 audio = pyaudio.PyAudio()
 
@@ -31,7 +39,7 @@ recording_thread = None
 def toggle_audio():
     global is_recording, stream, frames, recording_thread
 
-    Path(AUDIO_DIR).mkdir(parents=True, exist_ok=True)
+    Path(ASSETS_DIR).mkdir(parents=True, exist_ok=True)
 
     if not is_recording:
         # START RECORDING
@@ -60,9 +68,10 @@ def toggle_audio():
         stream.stop_stream()
         stream.close()
 
-        filename = Path(AUDIO_DIR) / f"audio_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.wav"
+        filename = f"audio_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.wav"
+        destination_path = Path(ASSETS_DIR) / filename
 
-        with wave.open(str(filename), "wb") as wf:
+        with wave.open(str(destination_path), "wb") as wf:
             wf.setnchannels(1)
             wf.setsampwidth(audio.get_sample_size(pyaudio.paInt16))
             wf.setframerate(44100)
@@ -72,7 +81,7 @@ def toggle_audio():
 
         return {
             "type": "audio",
-            "path": filename
+            "filename": filename
         }
 
 def is_audio_recording():

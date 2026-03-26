@@ -1,8 +1,16 @@
 import shutil
-from config import SCREENSHOT_DIR, IMAGE_DIR
 from pathlib import Path
+import sys
 
-Path(IMAGE_DIR).mkdir(parents=True, exist_ok=True)
+# Allow running this file directly (`python controller\get_image.py`).
+# Without this, `config.py` in the project root may not be on `sys.path`.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from config import SCREENSHOT_DIR, ASSETS_DIR
+
+Path(ASSETS_DIR).mkdir(parents=True, exist_ok=True)
 
 def get_latest_screenshot():
 
@@ -18,14 +26,14 @@ def get_latest_screenshot():
 
         latest_file = max(image_files, key=lambda f: f.stat().st_ctime)
         filename = latest_file.name.replace(" ", "_")
-        destination_path = Path(IMAGE_DIR) / filename
+        destination_path = Path(ASSETS_DIR) / filename
 
         if not destination_path.exists():
             shutil.copy(latest_file, destination_path)
 
         return {
             "type": "image",
-            "path": destination_path
+            "filename": filename
         }
 
     except Exception as e:

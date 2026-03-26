@@ -1,5 +1,7 @@
 from config import NOTES_DIR
 from pathlib import Path
+from datetime import datetime
+
 from controller.get_text import get_text_note
 from controller.get_image import get_latest_screenshot
 from controller.get_audio import toggle_audio
@@ -7,26 +9,53 @@ from controller.get_audio import toggle_audio
 current_session = None
 
 
-def start_session(name):
+# 🔹 Helper
+def sanitize_filename(name: str) -> str:
+    return name.strip().replace(" ", "-").lower()
+
+
+def start_session(name, folder=""):
     global current_session
 
     if not name:
         print("❌ Provide session name")
         return
 
-    Path(NOTES_DIR).mkdir(parents=True, exist_ok=True)
+    safe_name = sanitize_filename(name)
 
-    path = Path(NOTES_DIR) / f"{name}.md"
+    # 🔥 Folder handling
+    if folder:
+        folder_path = Path(NOTES_DIR) / folder
+    else:
+        folder_path = Path(NOTES_DIR)
 
-    if path.exists():
-        print(f"❌ Session already exists: {name}")
-        return
+    folder_path.mkdir(parents=True, exist_ok=True)
 
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(f"## {name}\n\n")
+    # 🔥 File path
+    path = folder_path / f"{safe_name}.md"
+
+    # 🔥 Avoid overwrite
+    counter = 1
+    original_path = path
+    while path.exists():
+        path = original_path.with_name(f"{safe_name}-{counter}.md")
+        counter += 1
+
+    # 🔥 Create frontmatter
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    content = f"""---
+title: {name}
+date: {today}
+tags: []
+---
+
+"""
+
+    path.write_text(content, encoding="utf-8")
 
     current_session = path
-    print(f"🚀 Started session: {name}")
+    print(f"🚀 Started session: {path}")
 
 
 def end_session():
@@ -48,24 +77,25 @@ def save_note(note):
         return
 
     if not note:
-        return  # ✅ prevent crash
+        return
 
     path = current_session
 
-    if note["type"] == "text":
-        with open(path, "a", encoding="utf-8") as f:
+    with open(path, "a", encoding="utf-8") as f:
+
+        # ---- TEXT ----
+        if note["type"] == "text":
             f.write("```\n")
             f.write(note["text"])
-            f.write("\n```")
-            f.write("\n\n")
+            f.write("\n```\n\n")
 
-    elif note["type"] == "image":   
-        with open(path, "a", encoding="utf-8") as f:
-            f.write(f'![Screenshot](..\{note["path"]})\n\n')
+        # ---- IMAGE ----
+        elif note["type"] == "image":
+            f.write(f'![Screenshot]({note["filename"]})\n\n')
 
-    elif note["type"] == "audio":
-        with open(path, "a", encoding="utf-8") as f:
-            f.write(f'<audio controls src="..\{note["path"]}"></audio>\n\n')
+        # ---- AUDIO ----
+        elif note["type"] == "audio":
+            f.write(f'<audio controls src="{note["filename"]}"></audio>\n\n')
 
     print(f"✅ Saved note: {note['type']}")
 
@@ -81,6 +111,5 @@ def handle_image():
 def handle_audio():
     note = toggle_audio()
 
-    # Only save when recording stops
     if note:
         save_note(note)
