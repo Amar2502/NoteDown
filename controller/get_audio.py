@@ -5,8 +5,6 @@ from pathlib import Path
 import threading
 import sys
 
-# Allow running this file directly (`python controller\get_audio.py`).
-# Without this, `config.py` in the project root may not be on `sys.path`.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -43,7 +41,6 @@ def toggle_audio():
     Path(ASSETS_DIR).mkdir(parents=True, exist_ok=True)
 
     if not is_recording:
-        # START RECORDING
         frames = []
         stream = audio.open(
             format=pyaudio.paInt16,
@@ -62,7 +59,6 @@ def toggle_audio():
         return None
 
     else:
-        # STOP RECORDING
         is_recording = False
         recording_thread.join()
 

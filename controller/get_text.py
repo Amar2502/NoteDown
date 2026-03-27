@@ -2,21 +2,11 @@ import pyperclip
 
 
 def clean_text(text: str) -> str:
-    """
-    Preserve original formatting as much as possible.
-    Only clean problematic whitespace.
-    """
 
-    # Normalize Windows/Mac line endings
     text = text.replace("\r\n", "\n").replace("\r", "\n")
-
-    # Remove trailing spaces from each line
     lines = [line.rstrip() for line in text.split("\n")]
-
-    # Rejoin exactly as-is
     text = "\n".join(lines)
 
-    # Remove leading/trailing empty lines (but keep internal spacing)
     return text.strip("\n")
 
 
