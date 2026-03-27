@@ -12,7 +12,4 @@ __pycache__/
 *.pyzwzwz
 *.pyzwzwzw
 
-assets/
-assets/images/
-assets/audio/
-notes/
+ui_utils/setup.mp4

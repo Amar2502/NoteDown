@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from config import ASSETS_DIR
+from config import get_assets_dir
 
 audio = pyaudio.PyAudio()
 
@@ -39,6 +39,7 @@ recording_thread = None
 def toggle_audio():
     global is_recording, stream, frames, recording_thread
 
+    ASSETS_DIR = get_assets_dir()
     Path(ASSETS_DIR).mkdir(parents=True, exist_ok=True)
 
     if not is_recording:

@@ -1,4 +1,4 @@
-from config import NOTES_DIR
+from config import get_notes_dir
 from pathlib import Path
 from datetime import datetime
 
@@ -24,7 +24,8 @@ def start_session(name, folder=""):
     safe_name = sanitize_filename(name)
 
     # 🔥 Folder handling
-    folder_path = Path(NOTES_DIR) / folder if folder else Path(NOTES_DIR)
+    notes_dir = get_notes_dir()
+    folder_path = Path(notes_dir) / folder if folder else Path(notes_dir)
     folder_path.mkdir(parents=True, exist_ok=True)
 
     # 🔥 File path

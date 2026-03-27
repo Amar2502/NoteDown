@@ -1,16 +1,16 @@
 import sys
-from pathlib import Path
 
 from PyQt6.QtCore import Qt, QTimer, QPoint, QVariantAnimation, QPropertyAnimation
 from PyQt6.QtGui import QColor, QPainter, QPen, QFont, QIcon
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QPushButton, QHBoxLayout,
-    QLabel, QToolTip, QDialog, QLineEdit, QTreeWidget, QTreeWidgetItem, QStyle, QFrame
+    QLabel, QToolTip, QDialog, QLineEdit, QTreeWidget, QTreeWidgetItem, QStyle, QFrame,
+    QGraphicsDropShadowEffect
 )
 
 import core
 from utils.folder import get_folders, get_file_names
-from config import NOTES_DIR
+from config import get_notes_dir
 
 # ------------------ TOAST ------------------
 
@@ -84,6 +84,108 @@ class Toast(QLabel):
         layout.addWidget(self.label)
 
         self.hide()
+
+
+class QuickHelpDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint |
+            Qt.WindowType.WindowStaysOnTopHint |
+            Qt.WindowType.Tool
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setModal(True)
+        self.setFixedSize(500, 360)
+
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(26)
+        shadow.setOffset(0, 10)
+        shadow.setColor(QColor(0, 0, 0, 160))
+        self.setGraphicsEffect(shadow)
+
+        card = QFrame(self)
+        card.setObjectName("helpCard")
+        card.setStyleSheet("""
+            QFrame#helpCard {
+                background: rgba(11, 14, 22, 235);
+                border: 1px solid rgba(255, 255, 255, 22);
+                border-radius: 16px;
+            }
+            QLabel#helpTitle {
+                color: #e6edf3;
+                font-size: 20px;
+                font-weight: 800;
+            }
+            QLabel#helpText {
+                color: #8b949e;
+                font-size: 14px;
+                line-height: 1.65;
+            }
+            QPushButton#helpClose {
+                background: rgba(255,255,255,0.06);
+                color: rgba(255,255,255,0.60);
+                border: none;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 700;
+                padding: 9px 18px;
+                min-width: 140px;
+            }
+            QPushButton#helpClose:hover {
+                background: rgba(56, 139, 253, 0.35);
+                color: white;
+            }
+        """)
+
+        root = QVBoxLayout(card)
+        root.setContentsMargins(20, 18, 20, 18)
+        root.setSpacing(12)
+
+        header = QHBoxLayout()
+        header.setSpacing(10)
+        dot = QLabel("•")
+        dot.setStyleSheet("color:#388bfd;font-size:22px;padding-top:2px;")
+        dot.setFixedWidth(18)
+        title = QLabel("Quick Start")
+        title.setObjectName("helpTitle")
+        header.addWidget(dot, alignment=Qt.AlignmentFlag.AlignTop)
+        header.addWidget(title)
+        header.addStretch()
+        root.addLayout(header)
+
+        text = QLabel(
+            "<span style='color:#e6edf3'><b>Where notes are saved</b></span><br>"
+            "• Pick your <b style='color:#c9d1d9'>Obsidian Vault</b> root in setup (folder containing <b style='color:#c9d1d9'>.obsidian</b>)<br>"
+            "• In session start, choose a <b style='color:#c9d1d9'>folder path</b> if you want notes inside a subfolder<br>"
+            "• Leave folder empty to save notes at the <b style='color:#c9d1d9'>vault root</b><br><br>"
+            "<span style='color:#e6edf3'><b>How to use</b></span><br>"
+            "<b style='color:#c9d1d9'>1)</b> Click <b style='color:#c9d1d9'>Start / End Session</b><br>"
+            "<b style='color:#c9d1d9'>2)</b> Copy text, then click <b style='color:#c9d1d9'>Text</b><br>"
+            "<b style='color:#c9d1d9'>3)</b> Take screenshot, then click <b style='color:#c9d1d9'>Image</b><br>"
+            "<b style='color:#c9d1d9'>4)</b> Click <b style='color:#c9d1d9'>Audio</b>, speak, click again to save<br>"
+            "<b style='color:#c9d1d9'>5)</b> Click <b style='color:#c9d1d9'>Start / End Session</b> again to finish<br><br>"
+            "<span style='color:#6e7681'>Tip:</span> Click <b style='color:#c9d1d9'>N↓</b> to open your vault quickly."
+        )
+        text.setObjectName("helpText")
+        text.setWordWrap(True)
+        root.addWidget(text)
+
+        root.addStretch()
+
+        footer = QHBoxLayout()
+        footer.addStretch()
+        close_btn = QPushButton("Got it, let’s start")
+        close_btn.setObjectName("helpClose")
+        close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        close_btn.clicked.connect(self.accept)
+        footer.addWidget(close_btn)
+        root.addLayout(footer)
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(card)
 
     # ── Style ─────────────────────────────────────────────────────────────────
 
@@ -532,7 +634,8 @@ class SessionNameDialog(QDialog):
             return
 
         folder = self._selected_folder()
-        base = NOTES_DIR / folder if folder else NOTES_DIR
+        notes_dir = get_notes_dir()
+        base = notes_dir / folder if folder else notes_dir
 
         if not base.exists():
             self.suggestion_label.setText("")
@@ -657,7 +760,7 @@ class FloatingPanel(QWidget):
             Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setFixedSize(66, 310)
+        self.setFixedSize(66, 295)
 
         self.drag_pos = QPoint()
         self.session_active = False
@@ -690,9 +793,31 @@ class FloatingPanel(QWidget):
         """)
         self.close_btn.clicked.connect(QApplication.quit)
 
+        self.help_btn = QPushButton("?")
+        self.help_btn.setFixedSize(18, 18)
+        self.help_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.help_btn.setToolTip("Quick start guide")
+        self.help_btn.setStyleSheet("""
+            QPushButton {
+                background: rgba(56, 139, 253, 0.18);
+                color: rgba(198, 225, 255, 0.95);
+                border: none;
+                border-radius: 9px;
+                font-size: 11px;
+                font-weight: 700;
+                padding-bottom: 1px;
+            }
+            QPushButton:hover {
+                background: rgba(56, 139, 253, 0.42);
+                color: white;
+            }
+        """)
+
         top_bar = QHBoxLayout()
         top_bar.setContentsMargins(0, 0, 0, 0)
         top_bar.addStretch()
+        top_bar.addWidget(self.help_btn)
+        top_bar.addSpacing(6)
         top_bar.addWidget(self.close_btn)
 
         # ── Brand label ───────────────────────────────────────────────────────
@@ -701,8 +826,8 @@ class FloatingPanel(QWidget):
         self.brand_label.setStyleSheet("""
             QLabel {
                 color: rgba(140, 170, 255, 200);
-                font-size: 13px;
-                font-weight: 700;
+                font-size: 18px;
+                font-weight: 800;
                 letter-spacing: -0.5px;
             }
         """)
@@ -722,11 +847,11 @@ class FloatingPanel(QWidget):
         layout.addWidget(self.brand_label, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addSpacing(10)
         layout.addWidget(self.session_btn, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addSpacing(4)
+        layout.addSpacing(9)
         layout.addWidget(self.text_btn,    alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addSpacing(4)
+        layout.addSpacing(9)
         layout.addWidget(self.image_btn,   alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addSpacing(4)
+        layout.addSpacing(9)
         layout.addWidget(self.audio_btn,   alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addStretch()
 
@@ -738,6 +863,7 @@ class FloatingPanel(QWidget):
         self.text_btn.clicked.connect(self.get_text)
         self.image_btn.clicked.connect(self.get_image)
         self.audio_btn.clicked.connect(self.toggle_audio)
+        self.help_btn.clicked.connect(self.show_quick_help)
 
     # ── Paint: pill-shaped frosted panel ─────────────────────────────────────
 
@@ -768,6 +894,12 @@ class FloatingPanel(QWidget):
 
     def _show_action_error(self, error):
         self.toast.show_message(str(error), "error", 3200)
+
+    def show_quick_help(self):
+        dlg = QuickHelpDialog(self)
+        # Place near the floating panel so it feels connected.
+        dlg.move(self.x() - dlg.width() - 14, self.y())
+        dlg.exec()
 
     def _ensure_session_active(self):
         if self.session_active:

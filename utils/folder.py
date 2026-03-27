@@ -5,13 +5,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from config import NOTES_DIR
+from config import get_notes_dir
 
 
 def get_folders():
     folders = []
+    notes_dir = get_notes_dir()
 
-    for folder in NOTES_DIR.rglob("*"):
+    for folder in notes_dir.rglob("*"):
         if not folder.is_dir():
             continue
 
@@ -21,14 +22,15 @@ def get_folders():
         ):
             continue
 
-        rel_path = folder.relative_to(NOTES_DIR)
+        rel_path = folder.relative_to(notes_dir)
 
         folders.append(rel_path.as_posix())
 
     return sorted(folders)
 
 def get_file_names(folder_path: str):
-    base = NOTES_DIR / folder_path if folder_path else NOTES_DIR
+    notes_dir = get_notes_dir()
+    base = notes_dir / folder_path if folder_path else notes_dir
 
     if not base.exists():
         return []

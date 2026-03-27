@@ -8,13 +8,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from config import SCREENSHOT_DIR, ASSETS_DIR
+from config import get_screenshot_dir, get_assets_dir
 
-Path(ASSETS_DIR).mkdir(parents=True, exist_ok=True)
+Path(get_assets_dir()).mkdir(parents=True, exist_ok=True)
 
 def get_latest_screenshot():
 
     try:
+        SCREENSHOT_DIR = get_screenshot_dir()
+        ASSETS_DIR = get_assets_dir()
         if not SCREENSHOT_DIR.exists():
             print(f"⚠️ Screenshot folder not found: {SCREENSHOT_DIR}")
             return None
